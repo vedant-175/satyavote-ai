@@ -18,7 +18,8 @@
     "test:phase7": "tsx tests/duplicate-claims.test.ts",
     "test:phase8": "tsx tests/analytics-multilingual.test.ts",
     "db:seed": "tsx prisma/seed.ts",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -1,0 +1,53 @@
+{
+  "name": "election-verification-platform",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "tsx tests/rbac.test.ts && tsx tests/submissions.test.ts && tsx tests/claim-extraction.test.ts && tsx tests/evidence-gathering.test.ts && tsx tests/image-analysis.test.ts && tsx tests/scoring-judgement.test.ts && tsx tests/human-review.test.ts && tsx tests/duplicate-claims.test.ts && tsx tests/analytics-multilingual.test.ts",
+    "test:phase0": "tsx tests/rbac.test.ts",
+    "test:phase1": "tsx tests/submissions.test.ts",
+    "test:phase2": "tsx tests/claim-extraction.test.ts",
+    "test:phase3": "tsx tests/evidence-gathering.test.ts",
+    "test:phase4": "tsx tests/image-analysis.test.ts",
+    "test:phase5": "tsx tests/scoring-judgement.test.ts",
+    "test:phase6": "tsx tests/human-review.test.ts",
+    "test:phase7": "tsx tests/duplicate-claims.test.ts",
+    "test:phase8": "tsx tests/analytics-multilingual.test.ts",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:push": "prisma db push"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "cheerio": "^1.2.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.61.0",
+    "next": "16.4.2",
+    "next-auth": "^5.0.0-beta.32",
+    "prisma": "^6.19.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.2",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}

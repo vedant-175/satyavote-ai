@@ -16,7 +16,7 @@ export default async function HomePage() {
   const session = await auth();
 
   const [userCount, claimCount, sourceCount, auditCount] = await Promise.all([
-    prisma.user.count(),
+    prisma.user.count(), 
     prisma.claim.count(),
     prisma.sourceProfile.count(),
     prisma.auditLog.count(),

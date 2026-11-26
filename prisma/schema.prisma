@@ -1,10 +1,182 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  name           String?
+  email          String         @unique
+  passwordHash   String
+  role           Role           @default(SUBMITTER)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  reviewedClaims Claim[]        @relation("ReviewedClaims")
+  reviewActions  ReviewAction[] @relation("ReviewerActions")
+  submissions    Submission[]   @relation("UserSubmissions")
+
+  @@index([role])
+}
+
+model Submission {
+  id            String           @id @default(cuid())
+  type          SubmissionType
+  rawText       String?
+  url           String?
+  imageUrl      String?
+  language      String           @default("en")
+  status        SubmissionStatus @default(RECEIVED)
+  submitterId   String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  claims        Claim[]
+  imageAnalysis ImageAnalysis?
+  pipelineRuns  PipelineRun[]
+  submitter     User?            @relation("UserSubmissions", fields: [submitterId], references: [id])
+
+  @@index([status])
+  @@index([submitterId])
+  @@index([createdAt])
+}
+
+model Claim {
+  id              String         @id @default(cuid())
+  submissionId    String
+  text            String
+  originalText    String?
+  language        String         @default("en")
+  checkable       Boolean        @default(true)
+  embedding       Float[]
+  aiVerdict       Verdict        @default(UNVERIFIED)
+  aiConfidence    Float          @default(0.0)
+  aiReasoning     String?
+  finalVerdict    Verdict?
+  finalNote       String?
+  reviewedById    String?
+  publishedAt     DateTime?
+  matchedClaimId  String?
+  similarityScore Float?
+  repeatCount     Int            @default(1)
+  topic           String?        @default("General")
+  state           String?        @default("National")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  matchedClaim    Claim?         @relation("ClaimMatches", fields: [matchedClaimId], references: [id])
+  matches         Claim[]        @relation("ClaimMatches")
+  reviewedBy      User?          @relation("ReviewedClaims", fields: [reviewedById], references: [id])
+  submission      Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  evidence        Evidence[]
+  reviewActions   ReviewAction[]
+
+  @@index([submissionId])
+  @@index([aiVerdict])
+  @@index([finalVerdict])
+  @@index([publishedAt])
+  @@index([topic])
+  @@index([state])
+  @@index([repeatCount])
+}
+
+model Evidence {
+  id          String       @id @default(cuid())
+  claimId     String
+  kind        EvidenceKind
+  sourceName  String
+  url         String?
+  title       String?
+  snippet     String?
+  stance      Stance       @default(NEUTRAL)
+  retrievedAt DateTime     @default(now())
+  rawJson     Json?
+  createdAt   DateTime     @default(now())
+  claim       Claim        @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([kind])
+  @@index([stance])
+}
+
+model ImageAnalysis {
+  id                String     @id @default(cuid())
+  submissionId      String     @unique
+  ocrText           String?
+  exifJson          Json?
+  reverseSearchJson Json?
+  aiGeneratedScore  Float?
+  perceptualHash    String?
+  flags             String[]   @default([])
+  createdAt         DateTime   @default(now())
+  submission        Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([perceptualHash])
+}
+
+model SourceProfile {
+  id             String   @id @default(cuid())
+  domain         String   @unique
+  ageDays        Int?
+  reputationTier String   @default("UNKNOWN")
+  notes          String?
+  checkedAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([domain])
+  @@index([reputationTier])
+}
+
+model ReviewAction {
+  id          String           @id @default(cuid())
+  claimId     String
+  reviewerId  String
+  action      ReviewActionType
+  fromVerdict Verdict?
+  toVerdict   Verdict?
+  note        String?
+  createdAt   DateTime         @default(now())
+  claim       Claim            @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  reviewer    User             @relation("ReviewerActions", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([reviewerId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  actorType ActorType @default(SYSTEM)
+  actorId   String?
+  event     String
+  entity    String
+  entityId  String
+  metadata  Json?
+  createdAt DateTime  @default(now())
+
+  @@index([actorType, actorId])
+  @@index([entity, entityId])
+  @@index([event])
+  @@index([createdAt])
+}
+
+model PipelineRun {
+  id            String            @id @default(cuid())
+  submissionId  String
+  step          String
+  status        PipelineRunStatus @default(PENDING)
+  startedAt     DateTime          @default(now())
+  finishedAt    DateTime?
+  error         String?
+  promptVersion String?
+  createdAt     DateTime          @default(now())
+  submission    Submission        @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@index([step])
+  @@index([status])
 }
 
 enum Role {
@@ -69,184 +241,4 @@ enum PipelineRunStatus {
   RUNNING
   COMPLETED
   FAILED
-}
-
-model User {
-  id            String         @id @default(cuid())
-  name          String?
-  email         String         @unique
-  passwordHash  String
-  role          Role           @default(SUBMITTER)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  submissions   Submission[]   @relation("UserSubmissions")
-  reviewedClaims Claim[]       @relation("ReviewedClaims")
-  reviewActions ReviewAction[] @relation("ReviewerActions")
-
-  @@index([role])
-}
-
-model Submission {
-  id            String           @id @default(cuid())
-  type          SubmissionType
-  rawText       String?          @db.Text
-  url           String?          @db.Text
-  imageUrl      String?          @db.Text
-  language      String           @default("en")
-  status        SubmissionStatus @default(RECEIVED)
-  submitterId   String?
-  submitter     User?            @relation("UserSubmissions", fields: [submitterId], references: [id], onDelete: SetNull)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-
-  claims        Claim[]
-  imageAnalysis ImageAnalysis?
-  pipelineRuns  PipelineRun[]
-
-  @@index([status])
-  @@index([submitterId])
-  @@index([createdAt])
-}
-
-model Claim {
-  id            String         @id @default(cuid())
-  submissionId  String
-  submission    Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  text          String         @db.Text
-  originalText  String?        @db.Text
-  language      String         @default("en")
-  checkable     Boolean        @default(true)
-  
-  // Vector embedding represented as float array for universal compatibility & cosine similarity
-  embedding     Float[]
-
-  aiVerdict     Verdict        @default(UNVERIFIED)
-  aiConfidence  Float          @default(0.0)
-  aiReasoning   String?        @db.Text
-  
-  finalVerdict  Verdict?
-  finalNote     String?        @db.Text
-  reviewedById  String?
-  reviewedBy    User?          @relation("ReviewedClaims", fields: [reviewedById], references: [id], onDelete: SetNull)
-  publishedAt   DateTime?
-  
-  matchedClaimId String?
-  matchedClaim   Claim?         @relation("ClaimMatches", fields: [matchedClaimId], references: [id], onDelete: SetNull)
-  matches        Claim[]        @relation("ClaimMatches")
-  similarityScore Float?
-  repeatCount    Int            @default(1)
-  topic          String?        @default("General")
-  state          String?        @default("National")
-  
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  evidence      Evidence[]
-  reviewActions ReviewAction[]
-
-  @@index([submissionId])
-  @@index([aiVerdict])
-  @@index([finalVerdict])
-  @@index([publishedAt])
-  @@index([topic])
-  @@index([state])
-  @@index([repeatCount])
-}
-
-model Evidence {
-  id           String       @id @default(cuid())
-  claimId      String
-  claim        Claim        @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  kind         EvidenceKind
-  sourceName   String
-  url          String?      @db.Text
-  title        String?      @db.Text
-  snippet      String?      @db.Text
-  stance       Stance       @default(NEUTRAL)
-  retrievedAt  DateTime     @default(now())
-  rawJson      Json?
-  createdAt    DateTime     @default(now())
-
-  @@index([claimId])
-  @@index([kind])
-  @@index([stance])
-}
-
-model ImageAnalysis {
-  id                String      @id @default(cuid())
-  submissionId      String      @unique
-  submission        Submission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  ocrText           String?     @db.Text
-  exifJson          Json?
-  reverseSearchJson Json?
-  aiGeneratedScore  Float?
-  perceptualHash    String?
-  flags             String[]    @default([])
-  createdAt         DateTime    @default(now())
-
-  @@index([perceptualHash])
-}
-
-model SourceProfile {
-  id             String    @id @default(cuid())
-  domain         String    @unique
-  ageDays        Int?
-  reputationTier String    @default("UNKNOWN") // OFFICIAL, CREDIBLE, QUESTIONABLE, UNRELIABLE, UNKNOWN
-  notes          String?   @db.Text
-  checkedAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  @@index([domain])
-  @@index([reputationTier])
-}
-
-model ReviewAction {
-  id          String           @id @default(cuid())
-  claimId     String
-  claim       Claim            @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  reviewerId  String
-  reviewer    User             @relation("ReviewerActions", fields: [reviewerId], references: [id], onDelete: Cascade)
-  action      ReviewActionType
-  fromVerdict Verdict?
-  toVerdict   Verdict?
-  note        String?          @db.Text
-  createdAt   DateTime         @default(now())
-
-  @@index([claimId])
-  @@index([reviewerId])
-  @@index([createdAt])
-}
-
-model AuditLog {
-  id         String    @id @default(cuid())
-  actorType  ActorType @default(SYSTEM)
-  actorId    String?
-  event      String
-  entity     String
-  entityId   String
-  metadata   Json?
-  createdAt  DateTime  @default(now())
-
-  @@index([actorType, actorId])
-  @@index([entity, entityId])
-  @@index([event])
-  @@index([createdAt])
-}
-
-model PipelineRun {
-  id            String            @id @default(cuid())
-  submissionId  String
-  submission    Submission        @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  step          String
-  status        PipelineRunStatus @default(PENDING)
-  startedAt     DateTime          @default(now())
-  finishedAt    DateTime?
-  error         String?           @db.Text
-  promptVersion String?
-  createdAt     DateTime          @default(now())
-
-  @@index([submissionId])
-  @@index([step])
-  @@index([status])
 }

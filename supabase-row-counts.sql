@@ -1,0 +1,10 @@
+SELECT 'User' AS table_name, COUNT(*) AS total FROM public."User"
+UNION ALL SELECT 'Submission', COUNT(*) FROM public."Submission"
+UNION ALL SELECT 'Claim', COUNT(*) FROM public."Claim"
+UNION ALL SELECT 'Evidence', COUNT(*) FROM public."Evidence"
+UNION ALL SELECT 'ImageAnalysis', COUNT(*) FROM public."ImageAnalysis"
+UNION ALL SELECT 'PipelineRun', COUNT(*) FROM public."PipelineRun"
+UNION ALL SELECT 'ReviewAction', COUNT(*) FROM public."ReviewAction"
+UNION ALL SELECT 'SourceProfile', COUNT(*) FROM public."SourceProfile"
+UNION ALL SELECT 'AuditLog', COUNT(*) FROM public."AuditLog"
+ORDER BY table_name;

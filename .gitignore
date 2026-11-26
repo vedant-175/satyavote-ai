@@ -40,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local secrets and database backups
+.env*
+!.env.example
+*.dump
+*.backup

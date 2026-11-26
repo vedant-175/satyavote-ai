@@ -17,12 +17,12 @@
     "test:phase6": "tsx tests/human-review.test.ts",
     "test:phase7": "tsx tests/duplicate-claims.test.ts",
     "test:phase8": "tsx tests/analytics-multilingual.test.ts",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "node prisma/seed.js",
     "db:push": "prisma db push",
     "postinstall": "prisma generate"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
